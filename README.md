@@ -1,2 +1,2 @@
 # FIR-Designer
-Kaiser-Bessel FIR Filter Designer. Standalone version based on the Kaiser-window FIR algorithm published by A. R. Collins on the ARC Filter Design page.
+Kaiser-Bessel FIR Filter Designer. This is a standalone version based on the Kaiser-window FIR algorithm published by Dr A. R. Collins on the ARC Filter Design page. Probably copyright by Dr Collins. The website no longer functions so this version is standalone. I use it for creating filters for my projects. If Dr Collins objects, then, of course, I will remove this version. Big thank you to Dr Collins for creating the original FIR filter designer.
