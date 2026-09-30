@@ -32,7 +32,10 @@ function calculate(){
  if(!Number.isFinite(Fs)||Fs<1000||Fs>1e6)return bad("Fs must be 1 kHz to 1 MHz.");
  if(!Number.isInteger(M0)||M0<3||M0>=500)return bad("M must be an integer from 3 to 499.");
  if(M0%2===0){m.value=M0+1} const M=+m.value, N=(M-1)/2;
- if(!(Fa>=0&&Fb>Fa&&Fb<Fs/2))return bad("Require 0 <= Fa < Fb < Fs/2.");
+ const ny=Fs/2;
+ if(typ==="Low pass"){ if(!(Fb>0&&Fb<ny))return bad("Require 0 < Fb < Fs/2."); }
+ else if(typ==="High pass"){ if(!(Fa>0&&Fa<ny))return bad("Require 0 < Fa < Fs/2."); }
+ else if(!(Fa>=0&&Fb>Fa&&Fb<ny))return bad("Require 0 <= Fa < Fb < Fs/2.");
  const A=[], a=alpha(Att), ia=Ino(a); H=new Array(M);
  for(let j=0;j<=N;j++){
    let x;
@@ -42,14 +45,14 @@ function calculate(){
      else if(typ==="Band pass") x=2*(Fb-Fa)/Fs;
      else x=1-2*(Fb-Fa)/Fs;
    }else{
-     if(typ==="Low pass") x=(Math.sin(2*j*Math.PI*Fb/Fs)-Math.sin(2*j*Math.PI*Fa/Fs))/(j*Math.PI);
+     if(typ==="Low pass") x=Math.sin(2*j*Math.PI*Fb/Fs)/(j*Math.PI);
      else if(typ==="High pass") x=-Math.sin(2*j*Math.PI*Fa/Fs)/(j*Math.PI);
-     else x=(Math.sin(2*j*Math.PI*Fb/Fs)-Math.sin(2*j*Math.PI*Fa/Fs))/(j*Math.PI);
+     else if(typ==="Band pass") x=(Math.sin(2*j*Math.PI*Fb/Fs)-Math.sin(2*j*Math.PI*Fa/Fs))/(j*Math.PI);
+     else x=(Math.sin(2*j*Math.PI*Fa/Fs)-Math.sin(2*j*Math.PI*Fb/Fs))/(j*Math.PI);
    }
    A[j]=x; H[N+j]=x*Ino(a*Math.sqrt(Math.max(0,1-j*j/(N*N))))/ia;
  }
  for(let j=0;j<N;j++)H[j]=H[M-1-j];
- if(typ==="Band stop"){for(let j=0;j<M;j++)H[j]=-H[j];H[N]=-H[N]+1}
  const mn=Math.min(...H),mx=Math.max(...H);
  status.textContent=`Calculated ${M} taps; Kaiser alpha = ${a.toFixed(5)}; coefficient range ${mn.toExponential(5)} to ${mx.toExponential(5)}.`;
  out.textContent=H.map((v,i)=>`${i.toString().padStart(4)}  ${v.toPrecision(12)}`).join("\n");
@@ -61,10 +64,13 @@ function drawImp(){let [c,w,h]=setup("imp");c.clearRect(0,0,w,h);let max=Math.ma
 function drawFreq(){let [c,w,h]=setup("freq"),Fs=+fs.value,n=1024,L=45,R=10,T=10,B=30;let mag=[];
  for(let k=0;k<n;k++){let f=k/(n-1)*Fs/2,re=0,im=0;for(let j=0;j<H.length;j++){let p=-2*Math.PI*f*j/Fs;re+=H[j]*Math.cos(p);im+=H[j]*Math.sin(p)}mag[k]=20*Math.log10(Math.max(Math.hypot(re,im),1e-12))}
  let top=Math.ceil(Math.max(...mag)/10)*10,bot=Math.max(-120,top-100);c.clearRect(0,0,w,h);
- c.font="12px Arial";c.beginPath();for(let d=top;d>=bot;d-=20){let y=T+(top-d)/(top-bot)*(h-T-B);c.moveTo(L,y);c.lineTo(w-R,y);c.fillText(d+" dB",4,y+4)}c.stroke();
+ c.font="12px Arial";c.beginPath();for(let d=top;d>=bot;d-=10){let y=T+(top-d)/(top-bot)*(h-T-B);c.moveTo(L,y);c.lineTo(w-R,y);c.fillText(d+" dB",4,y+4)}c.strokeStyle="#ccc";c.stroke();c.strokeStyle="#000";
  c.beginPath();mag.forEach((d,k)=>{let x=L+k/(n-1)*(w-L-R),y=T+(top-d)/(top-bot)*(h-T-B);k?c.lineTo(x,y):c.moveTo(x,y)});c.stroke();
- for(let i=0;i<=5;i++){let x=L+i/5*(w-L-R);c.fillText((Fs/2000*i).toFixed(1)+" kHz",x-14,h-8)}
+ for(let i=0;i<=5;i++){let x=L+i/5*(w-L-R);c.textAlign=i===0?"left":i===5?"right":"center";c.fillText((Fs/2000*i/5).toFixed(2).replace(/\.?0+$/,"")+" kHz",x,h-8)}
+ c.textAlign="left";
 }
 async function copyCoeffs(){if(!H.length)return;try{await navigator.clipboard.writeText(H.map(v=>v.toPrecision(12)).join(",\n"));status.textContent="Coefficients copied to clipboard."}catch(e){status.textContent="Clipboard unavailable; copy them from the box above."}}
+function upd(){const t=type.value;fa.disabled=(t==="Low pass");fb.disabled=(t==="High pass")}
+type.addEventListener("change",upd);upd();
 calculate();
 </script></body></html>
